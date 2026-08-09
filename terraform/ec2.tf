@@ -25,7 +25,8 @@ resource "aws_instance" "web_server" {
   ami                  = data.aws_ami.ubuntu.id
   instance_type        = "t2.micro"
   key_name             = aws_key_pair.deployer_key.key_name
-  security_groups      = [aws_security_group.web_sg.name]
+  subnet_id              = aws_default_subnet.default_az1.id
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
