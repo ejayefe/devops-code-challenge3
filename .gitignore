@@ -1,0 +1,31 @@
+# Terraform local state and binary directories
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Keys and sensitive secrets
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Ansible local temporary files & retry files
+*.retry
+ansible.cfg
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
