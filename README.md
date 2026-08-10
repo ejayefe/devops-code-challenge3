@@ -1,43 +1,36 @@
-# Tech Challenge 3: Cloud Engineer Coding Challenge 3: Infrastructure as Code with Terraform and Ansible
-
-This project demonstrates end-to-end automated infrastructure provisioning and configuration management on AWS using **Terraform** and **Ansible**.
+Tech Challenge 3: Cloud Engineer Coding Challenge 3: Infrastructure as Code with Terraform and Ansible
+📌 Project Overview
+This project demonstrates end-to-end automated infrastructure provisioning and configuration management on AWS using Terraform and Ansible.
 
 The pipeline provisions a public-facing EC2 instance within an AWS Default VPC, configures security groups allowing SSH (port 22) and HTTP (port 80) access, attaches an IAM instance profile, and utilizes Ansible to automatically install, configure, and serve a custom Nginx web application.
 
----
-
-## Architecture & Component Design
-
-```text
-+-----------------------------------------------------------------------+
-| AWS us-east-1 Region                                                  |
-|                                                                       |
-|  +-----------------------------------------------------------------+  |
-|  | Default VPC (aws_default_vpc.default)                           |  |
-|  |                                                                 |  |
-|  |  +-----------------------------------------------------------+  |  |
-|  |  | Public Subnet (aws_default_subnet.default_az1)          |  |  |
-|  |  |                                                           |  |  |
-|  |  |  +-----------------------------------------------------+  |  |  |
-|  |  |  | EC2 Instance (t2.micro - Ubuntu)                    |  |  |  |
-|  |  |  |  - Security Group: Ports 22 & 80                    |  |  |  |
-|  |  |  |  - Managed via Ansible (Nginx Service)              |  |  |  |
-|  |  |  +-----------------------------------------------------+  |  |  |
-|  |  |                           ^                               |  |  |
-|  |  +---------------------------|-------------------------------+  |  |
-|  |                              | Internet Gateway Route          |  |  |
-|  +------------------------------|-----------------------------------+  |
-+---------------------------------|--------------------------------------+
-                                  |
-                           HTTP / SSH
-                                  |
-                         Local Workstation
-Infrastructure & Configuration Features
-Terraform S3 Remote Backend: Remote state storage and state locking configuration.
-Network & Security Provisioning: Explicit Internet Gateway routing table association, public IP assignment on launch, and security group rules for ports 22 and 80.
-AWS IAM & Key Pair Management: EC2 instance profile binding and SSH key pair deployment using deployer_key.
-Ansible Configuration Management: Automated Nginx installation, systemd service management, and Jinja2 HTML template rendering using index.html.j2.
-Repository Structure
+🏗️ Architecture & Component Design
+Plaintext
+  +-----------------------------------------------------------------------+
+  | AWS us-east-1 Region                                                  |
+  |                                                                       |
+  |  +-----------------------------------------------------------------+  |
+  |  | Default VPC (aws_default_vpc.default)                           |  |
+  |  |                                                                 |  |
+  |  |  +-----------------------------------------------------------+  |  |
+  |  |  | Public Subnet (aws_default_subnet.default_az1)          |  |  |
+  |  |  |                                                           |  |  |
+  |  |  |  +-----------------------------------------------------+  |  |  |
+  |  |  |  | EC2 Instance (t2.micro - Ubuntu)                    |  |  |  |
+  |  |  |  |  - Security Group: Ports 22 & 80                      |  |  |  |
+  |  |  |  |  - Managed via Ansible (Nginx Service)               |  |  |  |
+  |  |  |  +-----------------------------------------------------+  |  |  |
+  |  |  |                           ^                               |  |  |
+  |  |  +---------------------------|-------------------------------+  |  |
+  |  |                              | (Internet Gateway Route)          |  |
+  |  +------------------------------|-----------------------------------+  |
+  +---------------------------------|--------------------------------------+
+                                    |
+                            [ HTTP / SSH ]
+                                    |
+                           Local Workstation
+📁 Repository Structure
+Plaintext
 .
 ├── README.md
 ├── SUBMISSION_DOCUMENT.md
@@ -47,6 +40,12 @@ Repository Structure
 │   ├── playbook.yaml
 │   └── templates/
 │       └── index.html.j2
+├── snapshots/
+│   ├── 01-terraform-apply.png
+│   ├── 02-terraform-outputs.png
+│   ├── 03-ansible-ping.png
+│   ├── 04-ansible-playbook.png
+│   └── 05-webpage-browser.png
 └── terraform/
     ├── backend.tf
     ├── ec2.tf
@@ -55,224 +54,146 @@ Repository Structure
     ├── security_groups.tf
     ├── terraform.tfvars
     ├── variables.tf
-Prerequisites
+    └── vpc.tf
+🛠️ Complete Setup & Prerequisites Instructions
+1. Local Workstation Requirements
+Ensure the following CLI tools are installed on your workstation:
 
-Before beginning, ensure the following tools and resources are available:
+Terraform CLI: brew install terraform (>= 1.0)
 
-Terraform CLI (>= 1.0)
-Ansible CLI
-AWS CLI
-AWS credentials configured locally
-SSH key pair generated locally
+Ansible CLI: brew install ansible
 
-Install Ansible on macOS:
+AWS CLI: brew install awscli
 
-brew install ansible
+2. AWS Authentication & SSH Setup
+Configure AWS Credentials:
 
-Configure AWS CLI:
-
+Bash
 aws configure
+Provide your AWS Access Key ID, AWS Secret Access Key, and set default region to us-east-1.
 
-Generate an SSH key pair if one does not already exist:
+Generate SSH Key Pair:
+If you do not have an existing SSH key pair at ~/.ssh/id_rsa, generate one:
 
-ssh-keygen -t rsa
+Bash
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com" -f ~/.ssh/id_rsa -N ""
+🔍 Code Base & Infrastructure Breakdown
+1. Terraform Infrastructure Definitions (terraform/)
+backend.tf: Configures remote state storage in an S3 bucket to ensure state persistence and team collaboration.
 
-Expected files:
+vpc.tf: Sets up public networking components:
 
-~/.ssh/id_rsa
-~/.ssh/id_rsa.pub
-Phase 1: Provision Infrastructure with Terraform
+aws_default_vpc: References the default AWS VPC.
 
-Terraform is responsible for creating the AWS infrastructure required for the web server.
+aws_default_subnet: Enables map_public_ip_on_launch = true so the instance automatically receives a reachable public IPv4 address.
 
-1. Navigate to the Terraform directory
-cd terraform
-2. Initialize Terraform
+aws_internet_gateway & aws_route_table: Configures explicit routes mapping 0.0.0.0/0 through the Internet Gateway to grant external access.
 
-This initializes the Terraform working directory and configures the remote backend.
+security_groups.tf: Defines inbound/outbound firewall rules:
 
-terraform init
-3. Validate the Terraform configuration
-terraform validate
-4. Review the infrastructure plan
-terraform plan
-5. Provision the infrastructure
-terraform apply -auto-approve
+Inbound TCP Port 22 (SSH) from 0.0.0.0/0 for remote management via Ansible.
 
-Terraform provisions the required AWS resources, including:
+Inbound TCP Port 80 (HTTP) from 0.0.0.0/0 for public web traffic.
 
-VPC/networking components
-Public subnet
-Internet Gateway routing
-Security Group
-EC2 instance
-IAM instance profile
-SSH key configuration
-6. Retrieve the EC2 public IP
-terraform output -raw ec2_public_ip
+Outbound 0.0.0.0/0 (all traffic) allowing the EC2 instance to download OS packages and Nginx updates.
 
-Save this IP address because Ansible will use it to connect to the EC2 instance.
+ec2.tf: Provisions the Ubuntu virtual machine:
 
-Phase 2: Configure the Web Server with Ansible
+data.aws_ami.ubuntu: Dynamically queries the latest official Ubuntu AMI ID.
 
-Terraform creates the infrastructure, while Ansible configures the operating system and application environment on the EC2 instance.
+aws_key_pair: Uploads your local ~/.ssh/id_rsa.pub public key to AWS for secure SSH authentication.
 
-1. Navigate to the Ansible directory
-cd ../ansible
-2. Configure the Ansible inventory
+vpc_security_group_ids: Binds the security group ID directly to the instance network interface.
 
-Update inventory.ini with the public IP address returned by Terraform:
+outputs.tf: Exports dynamic deployment values, specifically ec2_public_ip, using terraform output -raw ec2_public_ip.
 
+2. Ansible Configuration Management (ansible/)
+ansible.cfg: Controls default execution behaviors, overriding strict host key checking to enable seamless SSH execution in automated pipelines:
+
+Ini, TOML
+[defaults]
+inventory = inventory.ini
+remote_user = ubuntu
+private_key_file = ~/.ssh/id_rsa
+host_key_checking = False
+inventory.ini: Maps target hosts for playbooks:
+
+Ini, TOML
 [webservers]
-<YOUR_EC2_PUBLIC_IP> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+<EC2_PUBLIC_IP> ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+playbook.yaml Explained Step-by-Step:
 
-Replace <YOUR_EC2_PUBLIC_IP> with the actual EC2 public IP.
+YAML
+---
+- name: Configure Web Server on EC2 Instance
+  hosts: webservers
+  become: true
+  tasks:
+    # Step 1: Refresh local apt metadata and keep cache fresh for 1 hour
+    - name: Update apt repository cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-3. Test connectivity
+    # Step 2: Install Nginx package via Ubuntu package manager
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
 
-Run the Ansible ping module:
+    # Step 3: Ensure systemd manages Nginx service lifecycle (started & enabled at boot)
+    - name: Ensure Nginx service is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
 
+    # Step 4: Process Jinja2 template and place rendered HTML at web root path
+    - name: Deploy Hello World web page template
+      template:
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+🚀 Execution & Deployment Steps
+Phase 1: Provision Infrastructure with Terraform
+Navigate to the terraform/ directory:
+
+Bash
+cd terraform
+Initialize provider plugins and backend storage:
+
+Bash
+terraform init
+Provision resources:
+
+Bash
+terraform apply -auto-approve
+Retrieve the assigned public IP:
+
+Bash
+terraform output -raw ec2_public_ip
+Phase 2: Configure Web Server with Ansible
+Navigate to the ansible/ directory:
+
+Bash
+cd ../ansible
+Update inventory.ini with your provisioned EC2 public IP address.
+
+Test SSH connectivity via Ansible ping:
+
+Bash
 ansible all -m ping
+Expected Output: 54.x.x.x | SUCCESS => {"changed": false, "ping": "pong"}
 
-Expected output:
+Execute the deployment playbook:
 
-SUCCESS => {"ping": "pong"}
-
-This confirms that Ansible can establish an SSH connection to the EC2 instance.
-
-4. Execute the deployment playbook
+Bash
 ansible-playbook playbook.yaml
+🧪 Verification & Testing
+Terminal HTTP Test:
 
-The playbook automatically:
-
-Connects to the EC2 instance.
-Installs Nginx.
-Configures the Nginx service.
-Starts and enables the Nginx service.
-Deploys the custom HTML page using the Jinja2 template.
-Makes the web application available through HTTP.
-Verification & Testing
-
-After Ansible completes successfully, verify that the web server is accessible.
-
-Test with curl
+Bash
 curl http://<YOUR_EC2_PUBLIC_IP>
-
-Alternatively, open the following in a web browser:
-
-http://<YOUR_EC2_PUBLIC_IP>
-Expected Web Application Output
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Tech Challenge 3</title>
-</head>
-<body>
-    <h1>Hello, World!</h1>
-    <p>Automated Deployment via Terraform & Ansible</p>
-</body>
-</html>
-Deployment Flow
-
-The complete deployment process follows this sequence:
-
-Local Workstation
-       |
-       | terraform apply
-       v
-   Terraform
-       |
-       v
-+----------------------+
-| AWS Infrastructure   |
-|                      |
-| VPC                  |
-| Public Subnet        |
-| Internet Gateway     |
-| Security Group       |
-| IAM                  |
-| EC2                  |
-+----------------------+
-       |
-       | EC2 Public IP
-       v
-     Ansible
-       |
-       | SSH
-       v
-+----------------------+
-| EC2 Ubuntu Server    |
-|                      |
-| Install Nginx        |
-| Configure Nginx      |
-| Deploy HTML Template |
-| Start Nginx          |
-+----------------------+
-       |
-       | HTTP :80
-       v
-     Browser
-       |
-       v
-  Web Application
-Terraform vs. Ansible Responsibilities
-Tool	Primary Responsibility	Example
-Terraform	Infrastructure provisioning	Creates EC2, VPC, subnet, security group, IAM
-Ansible	Server configuration	Installs Nginx and configures the web server
-AWS	Cloud infrastructure platform	Provides the underlying compute and networking
-Nginx	Web server	Serves the deployed HTML application
-
-The overall workflow is:
-
-Terraform
-    ↓
-Create Infrastructure
-    ↓
-EC2 Server
-    ↓
-Ansible
-    ↓
-Configure Server
-    ↓
-Nginx
-    ↓
-Serve Application
-Deployment Evidence
-
-The snapshots/ directory contains screenshots demonstrating the deployment process and successful application delivery.
-
-snapshots/
-├── 01-terraform-apply.png
-├── 02-terraform-outputs.png
-├── 03-ansible-ping.png
-├── 04-ansible-playbook.png
-└── 05-webpage-browser.png
-
-These screenshots provide evidence of:
-
-Successful Terraform infrastructure provisioning
-Terraform output containing the EC2 public IP
-Successful Ansible connectivity
-Successful Ansible playbook execution
-Successful web application deployment
-Project Summary
-
-This challenge demonstrates a fundamental cloud engineering workflow:
-
-Infrastructure as Code
-        ↓
-    Terraform
-        ↓
-AWS Infrastructure
-        ↓
-    EC2 Server
-        ↓
-    Ansible
-        ↓
-Server Configuration
-        ↓
-      Nginx
-        ↓
-Web Application
-
-The project separates infrastructure provisioning from server configuration, demonstrating how Terraform and Ansible can work together as complementary tools in a cloud engineering environment.
+Browser Verification: Open http://<YOUR_EC2_PUBLIC_IP> in your web browser.
