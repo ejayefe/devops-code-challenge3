@@ -9,7 +9,7 @@ The pipeline provisions a public-facing EC2 instance within an AWS Default VPC, 
 
 ---
 
-## 🏗️ Architecture & Component Design
+## Architecture & Component Design
 
     +-----------------------------------------------------------------------+
     | AWS us-east-1 Region                                                  |
